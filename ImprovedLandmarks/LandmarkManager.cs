@@ -7,7 +7,22 @@ namespace ImprovedLandmarks
 {
     public static class LandmarkManager
     {
-        public static List<CustomLandmark> Landmarks { get; } = new List<CustomLandmark>();
+        static Dictionary<string, List<CustomLandmark>> _allLandmarks = new Dictionary<string, List<CustomLandmark>>();
+        static string _currentWorld = "";
+
+        public static List<CustomLandmark> Landmarks
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_currentWorld))
+                    return new List<CustomLandmark>();
+                if (!_allLandmarks.ContainsKey(_currentWorld))
+                    _allLandmarks[_currentWorld] = new List<CustomLandmark>();
+                return _allLandmarks[_currentWorld];
+            }
+        }
+
+        public static string CurrentWorld => _currentWorld;
 
         static string _savePath;
         static string _configPath;
@@ -21,33 +36,87 @@ namespace ImprovedLandmarks
                 return;
 
             string json = File.ReadAllText(_savePath);
-            var loaded = JsonConvert.DeserializeObject<List<CustomLandmark>>(json);
-            if (loaded != null)
+
+            try
             {
-                Landmarks.Clear();
-                Landmarks.AddRange(loaded);
+                var loaded = JsonConvert.DeserializeObject<Dictionary<string, List<CustomLandmark>>>(json);
+                if (loaded != null)
+                {
+                    _allLandmarks = loaded;
+                    return;
+                }
             }
+            catch { }
+
+            try
+            {
+                var legacy = JsonConvert.DeserializeObject<List<CustomLandmark>>(json);
+                if (legacy != null && legacy.Count > 0)
+                {
+                    _allLandmarks["default"] = legacy;
+                    SaveAll();
+                }
+            }
+            catch { }
         }
 
-        public static void Save()
+        public static void SetCurrentWorld(string worldName)
+        {
+            _currentWorld = string.IsNullOrEmpty(worldName) ? "default" : worldName;
+            if (!_allLandmarks.ContainsKey(_currentWorld))
+                _allLandmarks[_currentWorld] = new List<CustomLandmark>();
+        }
+
+        static void SaveAll()
         {
             if (_savePath == null)
                 return;
 
-            string json = JsonConvert.SerializeObject(Landmarks, Formatting.Indented);
+            // Remove empty or keyless entries before saving
+            var toRemove = new List<string>();
+            foreach (var kv in _allLandmarks)
+                if (string.IsNullOrEmpty(kv.Key) || kv.Value.Count == 0)
+                    toRemove.Add(kv.Key);
+            foreach (var key in toRemove)
+                _allLandmarks.Remove(key);
+
+            string json = JsonConvert.SerializeObject(_allLandmarks, Formatting.Indented);
             File.WriteAllText(_savePath, json);
+        }
+
+        public static void Save() => SaveAll();
+
+        public static void RemoveWorld(string worldName)
+        {
+            if (string.IsNullOrEmpty(worldName))
+                return;
+            _allLandmarks.Remove(worldName);
+            SaveAll();
+        }
+
+        public static void RenameWorld(string oldName, string newName)
+        {
+            if (string.IsNullOrEmpty(oldName) || string.IsNullOrEmpty(newName))
+                return;
+            if (!_allLandmarks.ContainsKey(oldName))
+                return;
+            _allLandmarks[newName] = _allLandmarks[oldName];
+            _allLandmarks.Remove(oldName);
+            if (_currentWorld == oldName)
+                _currentWorld = newName;
+            SaveAll();
         }
 
         public static void Add(CustomLandmark landmark)
         {
             Landmarks.Add(landmark);
-            Save();
+            SaveAll();
         }
 
         public static void Remove(CustomLandmark landmark)
         {
             Landmarks.Remove(landmark);
-            Save();
+            SaveAll();
         }
 
         public static Vector2 LoadGuiPosition(Vector2 defaultPos)
