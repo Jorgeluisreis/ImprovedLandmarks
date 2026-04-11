@@ -32,6 +32,8 @@ A mod for **Spaceflight Simulator** that allows you to place fully customizable 
 - **Delete landmarks**: remove any landmark with a confirmation prompt
 - **Persistent storage**: landmarks are saved and restored on every session
 - **Draggable window**: the landmark panel is draggable and remembers its position across sessions
+- **Per-object name labels**: toggle the display of a rocket's name directly on the map for any rocket (Show/Hide Name button)
+- **Automatic label cleanup**: when a rocket is destroyed or removed, its label is automatically removed from the save file
 - **Auto-update**: automatically updated via UITools when a new release is available
 
 ---
@@ -59,17 +61,15 @@ A mod for **Spaceflight Simulator** that allows you to place fully customizable 
 
 ## Usage
 
+### Landmarks
+
 1. Load into a world and open the **map view**
-
 2. Click **"+ Landmark"** to enter placement mode
-<img width="362" height="284" alt="create_landmark" src="https://github.com/user-attachments/assets/4d664ec2-5ef1-4bbd-b599-d45333c2a7d6" />
-
+  <img width="362" height="284" alt="create_landmark" src="https://github.com/user-attachments/assets/4d664ec2-5ef1-4bbd-b599-d45333c2a7d6" />
 3. Click anywhere on the map, a dialog will open
-<img width="752" height="580" alt="data_landmark" src="https://github.com/user-attachments/assets/fc59fb7f-fd50-4b89-9e46-f6faa714ad7f" />
-
+  <img width="752" height="580" alt="data_landmark" src="https://github.com/user-attachments/assets/fc59fb7f-fd50-4b89-9e46-f6faa714ad7f" />
 4. Set the landmark name and customize appearance
-<img width="722" height="482" alt="data_landmark2" src="https://github.com/user-attachments/assets/b94db34e-74bc-479e-a7a6-601d6ff805a8" />
-
+  <img width="722" height="482" alt="data_landmark2" src="https://github.com/user-attachments/assets/b94db34e-74bc-479e-a7a6-601d6ff805a8" />
 5. Click **Confirm** to save
 
 To edit or delete a landmark, expand the list and use the **Edit** / **Del** buttons next to each entry.
@@ -78,7 +78,21 @@ To edit or delete a landmark, expand the list and use the **Edit** / **Del** but
 
 ---
 Great, now all you have to do is enjoy creating your landmarks.
-
 <img width="454" height="320" alt="result_landmark" src="https://github.com/user-attachments/assets/1c9e9b98-b342-4568-9c0d-7097ed475c14" />
+
+---
+
+### Object Name Labels
+
+You can now toggle the display of any rocket's name directly on the map! This feature is persistent and automatically cleans up labels when rockets are destroyed or removed.
+
+1. **Select a object** on the map (click its icon).
+2. Next to the Rename button, click **Show/Hide Name**.
+  - If the name is hidden, it will appear above the rocket on the map.
+  - If the name is shown, clicking again will hide it.
+3. The label will remain visible even after reloading the world or restarting the game.
+4. **Automatic cleanup:** If the rocket is destroyed or removed, its label is also removed from the save file automatically.
+
+**Tip:** You can toggle labels for as many rockets as you want. Each label is managed independently and saved per world.
 
 ---

@@ -77,9 +77,12 @@
     <Compile Include="CustomLandmark.cs" />
     <Compile Include="LandmarkManager.cs" />
     <Compile Include="LandmarkGUI.cs" />
+    <Compile Include="ObjectLabelManager.cs" />
     <Compile Include="Patches\DrawLandmarksPatch.cs" />
+    <Compile Include="Patches\GameSelectorPatch.cs" />
     <Compile Include="Patches\MapClickPatch.cs" />
     <Compile Include="Patches\WorldRenamePatch.cs" />
+     <Compile Include="Patches\RocketLabelCleanupPatch.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

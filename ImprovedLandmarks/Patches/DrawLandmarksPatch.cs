@@ -43,6 +43,22 @@ namespace ImprovedLandmarks.Patches
                 Vector2 previewNormal = new Vector2(Mathf.Sin(previewRad), Mathf.Cos(previewRad));
                 MapDrawer.DrawPointWithText(preview.PinSize, previewColor, Field.Text(LandmarkGUI.CurrentInputText), preview.LabelSize, previewColor, previewPos, previewNormal, 4, preview.LabelSpacing);
             }
+                    foreach (MapRocket mapObject in Object.FindObjectsByType<MapRocket>(FindObjectsSortMode.None))
+                    {
+                        if (mapObject == null || mapObject.rocket == null) continue;
+                        int branch = mapObject.rocket.stats.branch;
+                        if (branch < 0 || !ObjectLabelManager.IsLabeled(branch)) continue;
+
+                        string displayName = string.IsNullOrEmpty(mapObject.rocket.rocketName) ? "Object" : mapObject.rocket.rocketName;
+                        double zoom = Map.view.view.distance;
+                        float spacing = 0.2f * (float)(1000.0 / zoom);
+                        Vector2 labelPos = (Vector2)mapObject.Select_MenuPosition + new Vector2(0, spacing);
+                        Planet planet = mapObject.rocket.location.planet.Value;
+                        double fadeRadius = planet.data.basics.radius * (2.0 + 5.0);
+                        float alpha = Mathf.Min(MapDrawer.GetFadeIn(Map.view.view.distance, fadeRadius * 0.5 * 1.5, fadeRadius * 0.4 * 1.5));
+                        Color vanillaColor = new Color(1f, 1f, 1f, alpha);
+                        MapDrawer.DrawPointWithText(2, vanillaColor, Field.Text(displayName), 40, vanillaColor, labelPos, Vector2.up, 4, 999);
+                    }
         }
     }
 }

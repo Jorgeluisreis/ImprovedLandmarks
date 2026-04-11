@@ -17,8 +17,8 @@ namespace ImprovedLandmarks
         public override string DisplayName => "Improved Landmarks";
         public override string Author => "Jorgeluisreis";
         public override string MinimumGameVersionNecessary => "1.5.9.8";
-        public override string ModVersion => "1.1.0";
-        public override string Description => "Allows creating custom landmarks anywhere on the map.";
+        public override string ModVersion => "1.2.0";
+        public override string Description => "Allows creating custom landmarks anywhere on the map and toggling object name labels individually.";
         public override string IconLink => "https://raw.githubusercontent.com/Jorgeluisreis/ImprovedLandmarks/refs/heads/main/Images/Icon.png";
 
         public override Dictionary<string, string> Dependencies => new Dictionary<string, string>
@@ -38,10 +38,12 @@ namespace ImprovedLandmarks
 
         public override void Early_Load()
         {
-            patcher = new Harmony("improved.landmarks.mod");
+              patcher = new Harmony("improved.landmarks.mod");
 
-            try { patcher.PatchAll(); }
-            catch (System.Exception ex) { Debug.LogError($"[ImprovedLandmarks] PatchAll failed: {ex}"); }
+              _ = typeof(ImprovedLandmarks.Patches.RocketLabelCleanupPatch);
+
+              try { patcher.PatchAll(); }
+              catch (System.Exception ex) { Debug.LogError($"[ImprovedLandmarks] PatchAll failed: {ex}"); }
 
             try
             {
@@ -82,7 +84,9 @@ namespace ImprovedLandmarks
 
                 SceneHelper.OnWorldSceneLoaded += () =>
                 {
-                    LandmarkManager.SetCurrentWorld(GetCurrentWorldName());
+                    string worldName = GetCurrentWorldName();
+                    LandmarkManager.SetCurrentWorld(worldName);
+                    ObjectLabelManager.Init(ModFolder, worldName);
                     LandmarkGUI.Build();
                 };
             }

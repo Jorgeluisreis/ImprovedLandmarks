@@ -5,9 +5,29 @@ using UnityEngine;
 
 namespace ImprovedLandmarks
 {
+    public class WorldData
+    {
+        public List<CustomLandmark> landmarks = new List<CustomLandmark>();
+        public List<int> labeledObjects = new List<int>();
+    }
+
     public static class LandmarkManager
     {
-        static Dictionary<string, List<CustomLandmark>> _allLandmarks = new Dictionary<string, List<CustomLandmark>>();
+        public static List<int> GetLabeledObjects(string world)
+        {
+            if (string.IsNullOrEmpty(world)) world = "default";
+            if (!_worlds.ContainsKey(world)) return new List<int>();
+            return new List<int>(_worlds[world].labeledObjects);
+        }
+
+        public static void SetLabeledObjects(string world, IEnumerable<int> objects)
+        {
+            if (string.IsNullOrEmpty(world)) world = "default";
+            if (!_worlds.ContainsKey(world)) _worlds[world] = new WorldData();
+            _worlds[world].labeledObjects = new List<int>(objects);
+            SaveAll();
+        }
+        static Dictionary<string, WorldData> _worlds = new Dictionary<string, WorldData>();
         static string _currentWorld = "";
 
         public static List<CustomLandmark> Landmarks
@@ -16,9 +36,9 @@ namespace ImprovedLandmarks
             {
                 if (string.IsNullOrEmpty(_currentWorld))
                     return new List<CustomLandmark>();
-                if (!_allLandmarks.ContainsKey(_currentWorld))
-                    _allLandmarks[_currentWorld] = new List<CustomLandmark>();
-                return _allLandmarks[_currentWorld];
+                if (!_worlds.ContainsKey(_currentWorld))
+                    _worlds[_currentWorld] = new WorldData();
+                return _worlds[_currentWorld].landmarks;
             }
         }
 
@@ -26,6 +46,7 @@ namespace ImprovedLandmarks
 
         static string _savePath;
         static string _configPath;
+        static string _objectLabelsPath;
 
         public static void Load(string modFolder)
         {
@@ -36,35 +57,58 @@ namespace ImprovedLandmarks
                 return;
 
             string json = File.ReadAllText(_savePath);
-
+            bool upgraded = false;
             try
             {
-                var loaded = JsonConvert.DeserializeObject<Dictionary<string, List<CustomLandmark>>>(json);
+                var loaded = JsonConvert.DeserializeObject<Dictionary<string, WorldData>>(json);
                 if (loaded != null)
                 {
-                    _allLandmarks = loaded;
-                    return;
+                    _worlds = loaded;
+                    upgraded = true;
                 }
             }
             catch { }
 
-            try
+            if (!upgraded)
             {
-                var legacy = JsonConvert.DeserializeObject<List<CustomLandmark>>(json);
-                if (legacy != null && legacy.Count > 0)
+                try
                 {
-                    _allLandmarks["default"] = legacy;
-                    SaveAll();
+                    var loaded = JsonConvert.DeserializeObject<Dictionary<string, List<CustomLandmark>>>(json);
+                    if (loaded != null)
+                    {
+                        foreach (var kv in loaded)
+                        {
+                            if (!_worlds.ContainsKey(kv.Key))
+                                _worlds[kv.Key] = new WorldData();
+                            _worlds[kv.Key].landmarks = kv.Value;
+                        }
+                        upgraded = true;
+                        SaveAll();
+                    }
                 }
+                catch { }
             }
-            catch { }
+
+            if (!upgraded)
+            {
+                try
+                {
+                    var legacy = JsonConvert.DeserializeObject<List<CustomLandmark>>(json);
+                    if (legacy != null && legacy.Count > 0)
+                    {
+                        _worlds["default"] = new WorldData { landmarks = legacy };
+                        SaveAll();
+                    }
+                }
+                catch { }
+            }
         }
 
         public static void SetCurrentWorld(string worldName)
         {
             _currentWorld = string.IsNullOrEmpty(worldName) ? "default" : worldName;
-            if (!_allLandmarks.ContainsKey(_currentWorld))
-                _allLandmarks[_currentWorld] = new List<CustomLandmark>();
+            if (!_worlds.ContainsKey(_currentWorld))
+                _worlds[_currentWorld] = new WorldData();
         }
 
         static void SaveAll()
@@ -72,15 +116,14 @@ namespace ImprovedLandmarks
             if (_savePath == null)
                 return;
 
-            // Remove empty or keyless entries before saving
             var toRemove = new List<string>();
-            foreach (var kv in _allLandmarks)
-                if (string.IsNullOrEmpty(kv.Key) || kv.Value.Count == 0)
+            foreach (var kv in _worlds)
+                if (string.IsNullOrEmpty(kv.Key) || (kv.Value.landmarks.Count == 0 && kv.Value.labeledObjects.Count == 0))
                     toRemove.Add(kv.Key);
             foreach (var key in toRemove)
-                _allLandmarks.Remove(key);
+                _worlds.Remove(key);
 
-            string json = JsonConvert.SerializeObject(_allLandmarks, Formatting.Indented);
+            string json = JsonConvert.SerializeObject(_worlds, Formatting.Indented);
             File.WriteAllText(_savePath, json);
         }
 
@@ -90,7 +133,7 @@ namespace ImprovedLandmarks
         {
             if (string.IsNullOrEmpty(worldName))
                 return;
-            _allLandmarks.Remove(worldName);
+            _worlds.Remove(worldName);
             SaveAll();
         }
 
@@ -98,10 +141,11 @@ namespace ImprovedLandmarks
         {
             if (string.IsNullOrEmpty(oldName) || string.IsNullOrEmpty(newName))
                 return;
-            if (!_allLandmarks.ContainsKey(oldName))
-                return;
-            _allLandmarks[newName] = _allLandmarks[oldName];
-            _allLandmarks.Remove(oldName);
+            if (_worlds.ContainsKey(oldName))
+            {
+                _worlds[newName] = _worlds[oldName];
+                _worlds.Remove(oldName);
+            }
             if (_currentWorld == oldName)
                 _currentWorld = newName;
             SaveAll();
@@ -143,6 +187,24 @@ namespace ImprovedLandmarks
         }
 
         public static bool ConfigExists => _configPath != null && File.Exists(_configPath);
+
+        public static bool IsObjectLabeled(int branch)
+        {
+            if (string.IsNullOrEmpty(_currentWorld)) return false;
+            if (!_worlds.TryGetValue(_currentWorld, out var data)) return false;
+            return data.labeledObjects.Contains(branch);
+        }
+
+        public static void ToggleObjectLabel(int branch)
+        {
+            if (string.IsNullOrEmpty(_currentWorld)) return;
+            if (!_worlds.ContainsKey(_currentWorld))
+                _worlds[_currentWorld] = new WorldData();
+            var list = _worlds[_currentWorld].labeledObjects;
+            if (!list.Remove(branch))
+                list.Add(branch);
+            SaveAll();
+        }
 
         public static void SaveGuiPosition(Vector2 pos)
         {
